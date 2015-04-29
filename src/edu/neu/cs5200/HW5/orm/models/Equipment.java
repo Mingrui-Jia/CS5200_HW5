@@ -1,36 +1,35 @@
 package edu.neu.cs5200.HW5.orm.models;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
+import javax.xml.bind.annotation.*;
 
 
 
 @Entity
-
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.FIELD)
 public class Equipment {
 
 	@Id
+	@XmlAttribute
 	private int id;
+	@XmlAttribute
 	private String name;
+	@XmlAttribute
 	private String brand;
+	@XmlAttribute
 	private String description;
+	@XmlAttribute
 	private double price;
-	private int towerId;
+	@ManyToOne
+	@JoinColumn(name="towerId")
+	@XmlTransient
+	private Tower tower;
 	
 	
 	public Equipment() {
 		super();
 		// TODO Auto-generated constructor stub
-	}
-	public Equipment(int id, String name, String brand, String description,
-			double price, int towerId) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.brand = brand;
-		this.description = description;
-		this.price = price;
-		this.towerId = towerId;
 	}
 	public int getId() {
 		return id;
@@ -62,12 +61,23 @@ public class Equipment {
 	public void setPrice(double price) {
 		this.price = price;
 	}
-	public int getTowerId() {
-		return towerId;
+	public Tower getTower() {
+		return tower;
 	}
-	public void setTowerId(int towerId) {
-		this.towerId = towerId;
+	public void setTower(Tower tower) {
+		this.tower = tower;
 	}
+	public Equipment(int id, String name, String brand, String description,
+			double price, Tower tower) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.brand = brand;
+		this.description = description;
+		this.price = price;
+		this.tower = tower;
+	}
+
 
 	
 }

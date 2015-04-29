@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.*;
 public class SiteList {
 	@XmlElement(name="site")
 	private List<Site> sites;
-
+	
 	public List<Site> getSites() {
 		return sites;
 	}

@@ -1,5 +1,6 @@
 package edu.neu.cs5200.HW5.orm.dao;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,11 +17,17 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.xml.bind.*;
+import javax.xml.transform.*;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
+import sun.nio.cs.ext.ISCII91;
 import edu.neu.cs5200.HW5.orm.models.Site;
+import edu.neu.cs5200.HW5.orm.models.SiteList;
 
 
-@Path("/site")
+//@Path("/site")
 public class SiteDAO {
 	
 	EntityManagerFactory factory = Persistence.createEntityManagerFactory("cs5200.HW5");
@@ -30,18 +37,20 @@ public class SiteDAO {
 	//CRUD=create,read,update,delete增改删查
 	
 	//findSiteById
-	@GET
-	@Path("/{ID}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public Site findSite(@PathParam("ID") Integer siteId) {
+//	@GET
+//	@Path("/{ID}")
+//	@Produces(MediaType.APPLICATION_JSON)
+//	输出json格式
+//	@PathParam("ID") 
+	public Site findSite(Integer siteId) {
 	return em.find(Site.class, siteId);
 	//啥都不用干，find就好，因为没有对数据库进行操作，也不用getTransaction
 	}
 	
 	//findAllSites
-	@GET
-	@Path("/")
-	@Produces(MediaType.APPLICATION_JSON)
+//	@GET
+//	@Path("/")
+//	@Produces(MediaType.APPLICATION_JSON)
 	public List<Site> findAllSites() {
 		//select all instance of Site from class Site, not table Site
 		//这里是javax的query language，不是sql
@@ -50,71 +59,109 @@ public class SiteDAO {
 		//query.getResultList()得到的是list of objects,cast成List<Site>，return
 	}
 	
-	//createSite
-	//也可以用@GET来做，此处用@POST@Consume,是说利用json的数据进行post操作
-	@POST
-	@Path("/")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public List<Site> createSite(Site site) {
-		List<Site> sites = new ArrayList<Site>();
-		
-		//开始getTransaction,最后commit这个结果
-		em.getTransaction().begin();
-		em.persist(site);
-		//make it into database
-		//此时movie成为managed object，
-		//此时其所有的改动都已经和database中的record连接起来 
-		
-		Query query = em.createQuery("select site from Site site");
-		sites = (List<Site>)query.getResultList();
-		em.getTransaction().commit(); 
-		return sites;
-	}	
-		
-		
-	//updateSite
-	@PUT
-	@Path("/{id}")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public List<Site> updateSite(@PathParam("id") int siteId, Site site) {
-		List<Site> sites = new ArrayList<Site>();
-		
-		em.getTransaction().begin();
-		site.setId(siteId);
-		//这里把site的id设置为传递进来的ID，因为merge只能以object为参数
-		//这个site是新创建的用于传递参数的临时变量
-		em.merge(site);
-		//合并这里的site和它 correspond to 的database中的site，有不同的，改之
-		
-		//最后利用query.getResultList来产生结果的List
-		Query query = em.createQuery("select site from Site site");
-		sites = (List<Site>)query.getResultList();
-		em.getTransaction().commit();
-		return sites;
-	}		
-		
-	//removeSite
-	@DELETE
-	@Path("/{id}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public List<Site> removeSite(@PathParam("id") int siteId) {
-		List<Site> sites = new ArrayList<Site>();
-		
-		em.getTransaction().begin();
-		Site site = em.find(Site.class, siteId);
-//		em.createQuery("UPDATE Site site SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
-		//删除完成后设置 vs 把所有有关的都删掉
-		//SET FOREIGN_KEY_CHECKS = 1; 
-		em.remove(site);
-//		em.createQuery("UPDATE Site site SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
-		
-		Query query = em.createQuery("select site from Site site");
-		sites = (List<Site>)query.getResultList();
-		em.getTransaction().commit();
-		return sites;
-	}
+	
+	public void exportSiteDatabaseToXmlFile(SiteList siteList, String xmlFileName) {
+		File xmlFile = new File(xmlFileName);
+		try {
+		JAXBContext jaxb = JAXBContext.newInstance(SiteList.class);
+		Marshaller marshaller = jaxb.createMarshaller();
+//					marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+					marshaller.marshal(siteList, xmlFile);
+				} catch (JAXBException e) {
+		// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+	
+	public void convertXmlFileToOutputFile(
+			String inputXmlFileName,
+			String outputXmlFileName,
+			String xsltFileName)
+				{
+			File inputXmlFile = new File(inputXmlFileName);
+			File outputXmlFile = new File(outputXmlFileName);
+			File xsltFile = new File(xsltFileName);
+			StreamSource source = new StreamSource(inputXmlFile);
+			StreamSource xslt    = new StreamSource(xsltFile);
+			StreamResult output = new StreamResult(outputXmlFile);
+			TransformerFactory factory = TransformerFactory.newInstance();
+			try {
+			Transformer transformer = factory.newTransformer(xslt);
+						transformer.transform(source, output);
+					} catch (TransformerConfigurationException e) {
+			// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+	
+//	//createSite
+//	//也可以用@GET来做，此处用@POST@Consume,是说利用json的数据进行post操作
+//	@POST
+//	@Path("/")
+//	@Consumes(MediaType.APPLICATION_JSON)
+//	@Produces(MediaType.APPLICATION_JSON)
+//	public List<Site> createSite(Site site) {
+//		List<Site> sites = new ArrayList<Site>();
+//		
+//		//开始getTransaction,最后commit这个结果
+//		em.getTransaction().begin();
+//		em.persist(site);
+//		//make it into database
+//		//此时movie成为managed object，
+//		//此时其所有的改动都已经和database中的record连接起来 
+//		
+//		Query query = em.createQuery("select site from Site site");
+//		sites = (List<Site>)query.getResultList();
+//		em.getTransaction().commit(); 
+//		return sites;
+//	}	
+//		
+//		
+//	//updateSite
+//	@PUT
+//	@Path("/{id}")
+//	@Consumes(MediaType.APPLICATION_JSON)
+//	@Produces(MediaType.APPLICATION_JSON)
+//	public List<Site> updateSite(@PathParam("id") int siteId, Site site) {
+//		List<Site> sites = new ArrayList<Site>();
+//		
+//		em.getTransaction().begin();
+//		site.setId(siteId);
+//		//这里把site的id设置为传递进来的ID，因为merge只能以object为参数
+//		//这个site是新创建的用于传递参数的临时变量
+//		em.merge(site);
+//		//合并这里的site和它 correspond to 的database中的site，有不同的，改之
+//		
+//		//最后利用query.getResultList来产生结果的List
+//		Query query = em.createQuery("select site from Site site");
+//		sites = (List<Site>)query.getResultList();
+//		em.getTransaction().commit();
+//		return sites;
+//	}		
+//		
+//	//removeSite
+//	@DELETE
+//	@Path("/{id}")
+//	@Produces(MediaType.APPLICATION_JSON)
+//	public List<Site> removeSite(@PathParam("id") int siteId) {
+//		List<Site> sites = new ArrayList<Site>();
+//		
+//		em.getTransaction().begin();
+//		Site site = em.find(Site.class, siteId);
+////		em.createQuery("UPDATE Site site SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+//		//删除完成后设置 vs 把所有有关的都删掉
+//		//SET FOREIGN_KEY_CHECKS = 1; 
+//		em.remove(site);
+////		em.createQuery("UPDATE Site site SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
+//		
+//		Query query = em.createQuery("select site from Site site");
+//		sites = (List<Site>)query.getResultList();
+//		em.getTransaction().commit();
+//		return sites;
+//	}
 
 	
 	
@@ -129,10 +176,22 @@ public class SiteDAO {
 		
 		//findAllSites
 		
-//		List<Site> sites = dao.findAllSites();
-//		for(Site site : sites) {
-//			System.out.println(site.getName());
-//		}
+		List<Site> sites = dao.findAllSites();
+		for(Site site : sites) {
+			System.out.println(site.getName());
+		}
+		
+//		
+		
+
+		SiteList theSites = new SiteList();
+		theSites.setSites(sites);
+		dao.exportSiteDatabaseToXmlFile(theSites, "xmlsites.xml");
+//		Because / is not allowed in a file's name, I just use xmlsites.xml instead of xml/sites.xml
+		dao.convertXmlFileToOutputFile("xmlsites.xml", "xmlsites.html", "sites2html.xslt");
+		dao.convertXmlFileToOutputFile("xmlsites.xml", "xmlequipment.html", "sites2equipment.xslt");
+
+		
 		
 		//updateSite
 		//这里要先新建一个sister site，然后再set想要更改的attribute，
